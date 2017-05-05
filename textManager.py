@@ -9,7 +9,8 @@ import tensorflow as tf
 #The alternative approach will be the output of the embeddings are just a fully connected layer
 class TextModel():
 	def __init__(self,oneDimLen, seqLen = 30, fc = True):
-		self.model = gensim.models.KeyedVectors.load_word2vec_format('./resources/textEmbeddings.bin', binary=True)
+		#self.model = gensim.models.KeyedVectors.load_word2vec_format('./resources/textEmbeddings.bin', binary=True)
+		self.model = gensim.models.KeyedVectors.load('./resources/small.bin')
 		self.seqLen = seqLen
 		self.is_fc = fc
 		self.outputDim = oneDimLen
@@ -31,6 +32,7 @@ class TextModel():
 		matrixRep = np.zeros((self.seqLen, 300))
 
 		for index, token in enumerate(filtered_words):
+
 			try:
 				matrixRep[index] = self.model.word_vec(token)
 			except:
@@ -49,13 +51,4 @@ class TextModel():
 
 	def getOutputEmbedding(self):
 		return self._output
-
-FinalTextEmbeddingLen = 128				
-mo = TextModel(FinalTextEmbeddingLen)
-with tf.Session() as sess:
-	ten = mo.getOutputEmbedding()
-	sess.run(tf.global_variables_initializer())
-	result = sess.run(ten, feed_dict = {mo.sentencePlaceholder:mo.getSentenceEmbedding("a fat red bird with wide wings sat on the porch and waited a long time for his food. Unfortunately he never got it").reshape(-1, 30,300)})
-	print(result)
-
 
