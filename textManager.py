@@ -8,18 +8,19 @@ import tensorflow as tf
 #The rnn output will produce the final text embedding output
 #The alternative approach will be the output of the embeddings are just a fully connected layer
 class TextModel():
-	def __init__(self,oneDimLen, seqLen = 30, fc = True):
+	def __init__(self,oneDimLen,discriminator,batchSize,seqLen = 30, fc = True):
 		#self.model = gensim.models.KeyedVectors.load_word2vec_format('./resources/textEmbeddings.bin', binary=True)
 		self.model = gensim.models.KeyedVectors.load('./resources/small.bin')
 		self.seqLen = seqLen
 		self.is_fc = fc
 		self.outputDim = oneDimLen
-		self.sentencePlaceholder = tf.placeholder(tf.float32, shape = [None,seqLen,300])
-		with tf.variable_scope("embedding_vars") as scope:
-			if(fc):
-				self._output = self._fcLayer()
-			else:
-				self._output = self._rnnLayer()
+		self.trueSentencePlaceholder = tf.placeholder(tf.float32, shape = [batchSize,seqLen,300])
+		
+		self.trueOutput = self._fcLayer(self.trueSentencePlaceholder, False)
+
+		if(discriminator):
+			self.falseSentencePlaceholder = tf.placeholder(tf.float32, shape = [batchSize,seqLen,300])
+			self.falseOutput = self._fcLayer(self.falseSentencePlaceholder,True)
 
 
 	def getSentenceEmbedding(self, sentence):
@@ -43,12 +44,12 @@ class TextModel():
 	def _rnnLayer(self):
 		pass
 
-	def _fcLayer(self):
+	def _fcLayer(self, placeholder, resuse):
+		if(reuse):
+			tf.get_variable_scope().reuse_variables()
+
 		weights = tf.Variable(tf.truncated_normal([self.seqLen * 300 , self.outputDim], stddev=0.1))
 		bias = tf.Variable(tf.constant(1000., shape = [self.outputDim]))
 		reshaped = tf.reshape(self.sentencePlaceholder, [-1,self.seqLen * 300]) 
 		return tf.nn.relu(tf.matmul(reshaped, weights) + bias)
-
-	def getOutputEmbedding(self):
-		return self._output
 
