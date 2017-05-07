@@ -14,13 +14,19 @@ class TextModel():
 		self.seqLen = seqLen
 		self.is_fc = fc
 		self.outputDim = oneDimLen
-		self.trueSentencePlaceholder = tf.placeholder(tf.float32, shape = [batchSize,seqLen,300])
-		
-		self.trueOutput = self._fcLayer(self.trueSentencePlaceholder, False)
-
+		name = "generator"
 		if(discriminator):
-			self.falseSentencePlaceholder = tf.placeholder(tf.float32, shape = [batchSize,seqLen,300])
-			self.falseOutput = self._fcLayer(self.falseSentencePlaceholder,True)
+			name = "discriminator"
+
+		self.trueSentencePlaceholder = tf.placeholder(tf.float32, shape = [batchSize,seqLen,self.outputDim], name = "trueSent"+name+"PH")
+
+
+		with tf.variable_scope(name):	
+			self.trueOutput = self._fcLayer(self.trueSentencePlaceholder, False)
+
+			if(discriminator):
+				self.falseSentencePlaceholder = tf.placeholder(tf.float32, shape = [batchSize,seqLen,self.outputDim], name = "falseSentPH")
+				self.falseOutput = self._fcLayer(self.falseSentencePlaceholder,True)
 
 
 	def getSentenceEmbedding(self, sentence):
@@ -30,26 +36,26 @@ class TextModel():
 		if(len(filtered_words) > self.seqLen):
 			filtered_words = filtered_words[:self.seqLen] 
 
-		matrixRep = np.zeros((self.seqLen, 300))
+		matrixRep = np.zeros((self.seqLen, self.outputDim))
 
 		for index, token in enumerate(filtered_words):
 
 			try:
 				matrixRep[index] = self.model.word_vec(token)
 			except:
-				matrixRep[index] = np.ones(300)
+				matrixRep[index] = np.ones(self.outputDim)
 			
 		return matrixRep
 
 	def _rnnLayer(self):
 		pass
 
-	def _fcLayer(self, placeholder, resuse):
+	def _fcLayer(self, placeholder, reuse):
 		if(reuse):
 			tf.get_variable_scope().reuse_variables()
 
-		weights = tf.Variable(tf.truncated_normal([self.seqLen * 300 , self.outputDim], stddev=0.1))
-		bias = tf.Variable(tf.constant(1000., shape = [self.outputDim]))
-		reshaped = tf.reshape(self.sentencePlaceholder, [-1,self.seqLen * 300]) 
+		weights = tf.Variable(tf.truncated_normal([self.seqLen * self.outputDim , self.outputDim], stddev=0.1))
+		bias = tf.Variable(tf.constant(.1, shape = [self.outputDim]))
+		reshaped = tf.reshape(placeholder, [-1,self.seqLen * self.outputDim]) 
 		return tf.nn.relu(tf.matmul(reshaped, weights) + bias)
 
