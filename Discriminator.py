@@ -18,7 +18,8 @@ class Discriminator(Network):
 			Sr = self._discriminate(self.imageReal, self.textManager.trueOutput, reuse = False)
 			Sw = self._discriminate(self.imageReal, self.textManager.falseOutput)
 			Sf = self._discriminate(self.imageGenerated, self.textManager.trueOutput)
-			return [Sr, Sw, Sf]
+			errors = [[Sr,'Sr'], [Sw,'Sw'], [Sf,'Sf']]
+			return [tf.Print(x ,[x], message = "Var : %s"%n) for x,n in errors]
 
 	def _discriminate(self, imageTensor,textTensor, reuse=True):
 

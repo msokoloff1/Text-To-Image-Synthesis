@@ -1,18 +1,20 @@
 from Generator import *
 from Discriminator import *
 import numpy as np
+from random import randint
 
 class Aggregator():
 	def __init__(self,sess, discriminator):
 		self.discrim = discriminator
 		self.gen = self.discrim.generator
 		self.Sr, self.Sw, self.Sf = self.discrim.getOutputs()	
+		
 		self.sess = sess
-		self.updateDescrim = self._getUpdateDiscriminatorOp(0.0005)
-		self.updateGen = self._getUpdateGeneratorOp(0.0005) 
+		self.updateDiscrim = self._getUpdateDiscriminatorOp(0.00002)
+		self.updateGen = self._getUpdateGeneratorOp(0.000001) 
 	
 	def _getUpdateGeneratorOp(self, learningRate):
-		genLoss = tf.log(self.Sf) 
+		genLoss = tf.log(self.Sf+0.0001) 
 		optimizer = tf.train.AdamOptimizer(learningRate)
 		vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = "GeneratorVars")
 		grads = optimizer.compute_gradients(genLoss, vars)
@@ -20,17 +22,14 @@ class Aggregator():
 		
 
 	def _getUpdateDiscriminatorOp(self, learningRate):
-		DiscrimLoss = tf.log(self.Sr) + (tf.log(1.-self.Sw) + tf.log(1.-self.Sf))/2. 
+		DiscrimLoss = tf.log(self.Sr+ 0.0001) + (tf.log(1.00001-self.Sw) + tf.log(1.0001-self.Sf))/2. 
 		optimizer = tf.train.AdamOptimizer(learningRate)
 		vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = "discriminatorVars")
 		grads = optimizer.compute_gradients(DiscrimLoss, vars)
 		return optimizer.apply_gradients(grads)
 
 	def _applyGenUpdate(self,sentences, batchSize):
-		trueEmbeddings = np.zeros((batchSize, self.gen.textManager.seqLen, self.gen.textManager.outputDim))
-		for index, sentence in enumerate(sentences):
-			trueEmbeddings[index] = self.gen.textManager.getSentenceEmbedding(sentence)
-		
+		trueEmbeddings = self._prepSentences(sentences, batchSize, self.gen.textManager)
 
 		noise = np.random.random((batchSize,100))
 		self.sess.run(self.updateGen,  feed_dict = {
@@ -39,20 +38,41 @@ class Aggregator():
 			, self.discrim.textManager.trueSentencePlaceholder:trueEmbeddings
 			})
 
+	def _prepSentences(self, sentences, batchSize, embeddingNetwork):
+		embeddings = np.zeros((batchSize,embeddingNetwork.seqLen, embeddingNetwork.outputDim)) 
+		for index, sentence in enumerate(sentences):
+			embeddings[index] = embeddingNetwork.getSentenceEmbedding(sentence)
+
+		return embeddings
 
 
-	def _applyDiscrimUpdate(self):
-		pass
-		#sess.run(self..updateDescrim, feed_dict = {})
 
-	def learn(self):
-		pass
+	def _applyDiscrimUpdate(self, falseSentences, trueSentences,realImages, batchSize):
+		trueEmbeddings = self._prepSentences(trueSentences, batchSize, self.discrim.textManager)
+		fakeEmbeddings = self._prepSentences(falseSentences, batchSize, self.discrim.textManager)
+		noise = np.random.random((batchSize,100))
+		self.sess.run(self.updateDiscrim, feed_dict = {
+			  self.gen.noisePH:noise
+			, self.gen.textManager.trueSentencePlaceholder:trueEmbeddings
+			, self.discrim.textManager.trueSentencePlaceholder:trueEmbeddings
+			, self.discrim.imageReal:realImages
+			, self.discrim.textManager.falseSentencePlaceholder:fakeEmbeddings
+			})
+		
+
+	def learn(self, allData, numIters, batchSize):
+		dKeys = list(allData.keys())
+		for iteration in range(numIters):
+			for index in range(0,len(dKeys), batchSize):
+				images = np.random.random( (batchSize, 64,64,3) )
+				trueText, falseText = [],[]
+				for batchIndex in range(batchSize):
+					images[batchIndex] = allData[dKeys[index+batchIndex]]['image']
+					trueText.append(allData[dKeys[index+batchIndex]]['text'][randint(0,4)])
+					falseText.append(allData[dKeys[randint(0,len(dKeys)-1)]]['text'][randint(0,4)])
+					
+				self._applyDiscrimUpdate(falseText, trueText, images, batchSize)
+				self._applyGenUpdate(trueText, batchSize)
+		
 
 
-with tf.Session() as sess:
-	batchSize = 2
-	gen = Generator(batchSize)
-	discrim = Discriminator(batchSize, gen) 
-	a = Aggregator(sess, discrim)
-	sess.run(tf.global_variables_initializer())
-	a._applyGenUpdate(["the cat in the hat","the fat in the hat"],batchSize)
