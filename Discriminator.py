@@ -15,9 +15,9 @@ class Discriminator(Network):
 				
 	def getOutputs(self):
 		with tf.variable_scope("discriminatorVars"):
-			Sr = self._discriminate(self.imageReal, self.textManager.trueOutput, reuse = False)
-			Sw = self._discriminate(self.imageReal, self.textManager.falseOutput)
-			Sf = self._discriminate(self.imageGenerated, self.textManager.trueOutput)
+			Sr = tf.reduce_mean(self._discriminate(self.imageReal, self.textManager.trueOutput, reuse = False))
+			Sw = tf.reduce_mean(self._discriminate(self.imageReal, self.textManager.falseOutput))
+			Sf = tf.reduce_mean(self._discriminate(self.imageGenerated, self.textManager.trueOutput))
 			errors = [[Sr,'Sr'], [Sw,'Sw'], [Sf,'Sf']]
 			return [tf.Print(x ,[x], message = "Var : %s"%n) for x,n in errors]
 
