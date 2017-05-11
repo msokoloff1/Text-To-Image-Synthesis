@@ -16,6 +16,17 @@ with tf.Session() as sess:
 	gen = Generator(batchSize)
 	discrim = Discriminator(batchSize, gen)
 	a = Aggregator(sess, discrim)
-	sess.run(tf.global_variables_initializer())
+	saver = tf.train.Saver()
+	try:
+		saver.restore(sess, "savedModel.ckpt")
+		print("Successfully Restored Model!!")
+	except:
+		sess.run(tf.global_variables_initializer())
+		print("No model available for restoration")
+
 	allData = loadAllData()
+	
 	a.learn(allData, 20, batchSize)
+	saver.save(sess, "savedModel.ckpt")
+	
+	

@@ -47,22 +47,31 @@ class Aggregator():
 
 
 
-	def _applyDiscrimUpdate(self, falseSentences, trueSentences,realImages, batchSize):
+	def _applyDiscrimUpdate(self, falseSentences, trueSentences,realImages, batchSize, iteration,tb = False):
 		trueEmbeddings = self._prepSentences(trueSentences, batchSize, self.discrim.textManager)
 		fakeEmbeddings = self._prepSentences(falseSentences, batchSize, self.discrim.textManager)
 		noise = np.random.random((batchSize,100))
-		self.sess.run(self.updateDiscrim, feed_dict = {
-			  self.gen.noisePH:noise
-			, self.gen.textManager.trueSentencePlaceholder:trueEmbeddings
-			, self.discrim.textManager.trueSentencePlaceholder:trueEmbeddings
-			, self.discrim.imageReal:realImages
-			, self.discrim.textManager.falseSentencePlaceholder:fakeEmbeddings
-			})
+		feedDict = {
+ 			  self.gen.noisePH:noise
+                        , self.gen.textManager.trueSentencePlaceholder:trueEmbeddings
+                        , self.discrim.textManager.trueSentencePlaceholder:trueEmbeddings
+                        , self.discrim.imageReal:realImages
+                        , self.discrim.textManager.falseSentencePlaceholder:fakeEmbeddings
+                        }
+		
+		if(tb):
+			summary,_ = self.sess.run([self.summary_op,self.updateDiscrim], feed_dict=feedDict)
+			self.write.add_summary(summary, iteration)
+		else:
+			self.sess.run(self.updateDiscrim, feed_dict=feedDict)
 		
 
 	def learn(self, allData, numIters, batchSize):
+		self.summary_op = tf.summary.merge_all()
+		self.write = tf.summary.FileWriter("tboard")
 		dKeys = list(allData.keys())
 		for iteration in range(numIters):
+			once = True
 			for index in range(0,len(dKeys), batchSize):
 				images = np.random.random( (batchSize, 64,64,3) )
 				trueText, falseText = [],[]
@@ -70,9 +79,9 @@ class Aggregator():
 					images[batchIndex] = allData[dKeys[index+batchIndex-(batchSize+1)]]['image']
 					trueText.append(allData[dKeys[index+batchIndex-(batchSize+1)]]['text'][randint(0,4)])
 					falseText.append(allData[dKeys[randint(0,len(dKeys)-1)]]['text'][randint(0,4)])
-					
-				self._applyDiscrimUpdate(falseText, trueText, images, batchSize)
+				self._applyDiscrimUpdate(falseText, trueText, images, batchSize, iteration, once)
+				once = False
 				self._applyGenUpdate(trueText, batchSize)
-		
+					
 
 
