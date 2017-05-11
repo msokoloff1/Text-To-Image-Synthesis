@@ -9,8 +9,8 @@ import tensorflow as tf
 #The alternative approach will be the output of the embeddings are just a fully connected layer
 class TextModel():
 	def __init__(self,oneDimLen,discriminator,batchSize,seqLen = 30, fc = True):
-		#self.model = gensim.models.KeyedVectors.load_word2vec_format('./resources/textEmbeddings.bin', binary=True)
-		self.model = gensim.models.KeyedVectors.load('./resources/small.bin')
+		self.model = gensim.models.KeyedVectors.load_word2vec_format('./resources/textEmbeddings.bin', binary=True)
+		#self.model = gensim.models.KeyedVectors.load('./resources/small.bin')
 		self.seqLen = seqLen
 		self.is_fc = fc
 		self.outputDim = oneDimLen
