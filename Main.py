@@ -13,6 +13,7 @@ from DataPrep import *
 #Add leaky relu
 with tf.Session() as sess:
 	batchSize = 64
+	numIters = 500
 	gen = Generator(batchSize)
 	discrim = Discriminator(batchSize, gen)
 	a = Aggregator(sess, discrim)
@@ -26,7 +27,7 @@ with tf.Session() as sess:
 
 	allData = loadAllData()
 	
-	a.learn(allData, 20, batchSize)
+	a.learn(allData, numIters, batchSize)
 	saver.save(sess, "savedModel.ckpt")
 	
 	

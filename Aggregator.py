@@ -80,7 +80,7 @@ class Aggregator():
 				images = np.random.random( (batchSize, 64,64,3) )
 				trueText, falseText = [],[]
 				for batchIndex in range(batchSize):
-					images[batchIndex] = allData[dKeys[index+batchIndex-(batchSize+1)]]['image']
+					images[batchIndex] = allData[dKeys[index+batchIndex-(batchSize+1)]]['image'].next().reshape(64,64,3)
 					trueText.append(allData[dKeys[index+batchIndex-(batchSize+1)]]['text'][randint(0,4)])
 					falseText.append(allData[dKeys[randint(0,len(dKeys)-1)]]['text'][randint(0,4)])
 				self._applyDiscrimUpdate(falseText, trueText, images, batchSize, iteration, once)
