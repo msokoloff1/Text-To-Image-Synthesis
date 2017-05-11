@@ -11,21 +11,25 @@ class Aggregator():
 		
 		self.sess = sess
 		self.updateDiscrim = self._getUpdateDiscriminatorOp(0.00002)
-		self.updateGen = self._getUpdateGeneratorOp(0.000001) 
+		self.updateGen = self._getUpdateGeneratorOp(0.000002) 
 	
 	def _getUpdateGeneratorOp(self, learningRate):
-		genLoss = tf.log(self.Sf+0.0001) 
+		genLoss = -tf.reduce_mean(tf.log(self.Sf+0.0001))
 		optimizer = tf.train.AdamOptimizer(learningRate)
 		vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = "GeneratorVars")
 		grads = optimizer.compute_gradients(genLoss, vars)
+		tf.summary.scalar("genLoss", genLoss)
+		tf.Print(genLoss, [genLoss], message = "Generator Loss : ")
 		return optimizer.apply_gradients(grads)
 		
 
 	def _getUpdateDiscriminatorOp(self, learningRate):
-		DiscrimLoss = tf.log(self.Sr+ 0.0001) + (tf.log(1.00001-self.Sw) + tf.log(1.0001-self.Sf))/2. 
+		DiscrimLoss = -tf.reduce_mean(tf.log(self.Sr+ 0.0001) + (tf.log(1.00001-self.Sw) + tf.log(1.0001-self.Sf))/2.) 
+		tf.summary.scalar("discrimLoss", DiscrimLoss)
 		optimizer = tf.train.AdamOptimizer(learningRate)
 		vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = "discriminatorVars")
 		grads = optimizer.compute_gradients(DiscrimLoss, vars)
+		tf.Print(DiscrimLoss, [DiscrimLoss], message = "Discriminator Loss : ")
 		return optimizer.apply_gradients(grads)
 
 	def _applyGenUpdate(self,sentences, batchSize):

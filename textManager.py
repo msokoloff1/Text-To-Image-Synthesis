@@ -50,7 +50,10 @@ class TextModel():
 			
 		return matrixRep
 
-	def _rnnLayer(self):
+	def _rnnLayer(self, placeholder, reuse):
+		if(reuse):
+			tf.get_variable_scope().reuse_variables()
+		
 		pass
 
 	def _fcLayer(self, placeholder, reuse):
