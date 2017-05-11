@@ -7,6 +7,9 @@ import tensorflow as tf
 #Each embedding becomes an input at a particular time step for an rnn
 #The rnn output will produce the final text embedding output
 #The alternative approach will be the output of the embeddings are just a fully connected layer
+#http://stackoverflow.com/documentation/tensorflow/4827/creating-rnn-lstm-and-bidirectional-rnn-lstms-with-tensorflow#t=201705082127298191823
+	
+	
 class TextModel():
 	def __init__(self,oneDimLen,discriminator,batchSize,seqLen = 30, fc = True):
 		self.model = gensim.models.KeyedVectors.load_word2vec_format('./resources/textEmbeddings.bin', binary=True)
